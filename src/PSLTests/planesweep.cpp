@@ -219,8 +219,8 @@ int main(int argc, char* argv[])
     avgDistance /= numDistances;
     std::cout << "Cameras have an average distance of " << avgDistance << "." << std::endl;
 
-    float minZ = (float) (2.5f*avgDistance);
-    float maxZ = (float) (100.0f*avgDistance);
+    float minZ = (float) (0.5f*avgDistance);
+    float maxZ = (float) (1.5f*avgDistance);
     std::cout << "  Z range :  " << minZ << "  - " << maxZ <<  std::endl;
     makeOutputFolder("pinholeTestResults");
 
@@ -258,6 +258,7 @@ int main(int argc, char* argv[])
                     PSL_THROW_EXCEPTION("Failed to load image")
                 }
                 refid = cPS.addImage(image, cameras[reference_idx]);
+
                 //std::cout << "id:" << refid << std::endl;
             }
             int idx = adjacent_views_idxs[i];
