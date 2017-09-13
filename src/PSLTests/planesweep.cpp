@@ -42,6 +42,13 @@ void makeOutputFolder(std::string folderName)
     }
 }
 
+std::string toString(int x)
+{
+    std::ostringstream stream;
+    stream << x;
+    return stream.str();
+}
+
 bool has_suffix(const std::string &str, const std::string &suffix)
 {
     return str.size() >= suffix.size() &&
@@ -146,6 +153,7 @@ int main(int argc, char* argv[])
     std::string output_folder;
     int reference_idx;
     int n_views;
+    int depth_planes;
 
     boost::program_options::options_description desc("Allowed options");
     desc.add_options()
@@ -154,6 +162,7 @@ int main(int argc, char* argv[])
             ("output_folder", boost::program_options::value<std::string>(&output_folder), "Path to the save tha output data")
             ("reference_idx", boost::program_options::value<int>(&reference_idx), "Reference frame to be used")
             ("n_views", boost::program_options::value<int>(&n_views), "Number of views to be used")
+            ("depth_planes", boost::program_options::value<int>(&depth_planes), "Number of depth planes used")
             ;
 
     boost::program_options::variables_map vm;
@@ -219,20 +228,21 @@ int main(int argc, char* argv[])
     avgDistance /= numDistances;
     std::cout << "Cameras have an average distance of " << avgDistance << "." << std::endl;
 
-    float minZ = (float) (0.5f*avgDistance);
+    float minZ = (float) (0.55f*avgDistance);
     float maxZ = (float) (1.5f*avgDistance);
     std::cout << "  Z range :  " << minZ << "  - " << maxZ <<  std::endl;
-    makeOutputFolder("pinholeTestResults");
+    makeOutputFolder(output_folder);
+    std::string ref = toString(reference_idx);
 
     // First tests compute a depth map for the middle image of the first row
     {
-        makeOutputFolder("pinholeTestResults/colorSAD");
+        makeOutputFolder(output_folder + "/colorSAD");
 
         PSL::CudaPlaneSweep cPS;
-        cPS.setScale(0.75); // Scale the images down to 0.25 times the original side length
+        cPS.setScale(1.0); // Scale the images down to 0.25 times the original side length
         cPS.setZRange(minZ, maxZ);
         cPS.setMatchWindowSize(7,7);
-        cPS.setNumPlanes(256);
+        cPS.setNumPlanes(depth_planes);
         cPS.setOcclusionMode(PSL::PLANE_SWEEP_OCCLUSION_NONE);
         cPS.setPlaneGenerationMode(PSL::PLANE_SWEEP_PLANEMODE_UNIFORM_DISPARITY);
         cPS.setMatchingCosts(PSL::PLANE_SWEEP_SAD);
@@ -284,12 +294,10 @@ int main(int argc, char* argv[])
             cPS.process(refid);
             PSL::DepthMap<float, double> dM;
             dM = cPS.getBestDepth();
-            cv::Mat refImage = cPS.downloadImage(refid);
 
-            makeOutputFolder("pinholeTestResults/colorSAD/NoOcclusionHandling/");
-            cv::imwrite("pinholeTestResults/colorSAD/NoOcclusionHandling/refImg.png",refImage);
-            dM.saveInvDepthAsColorImage("pinholeTestResults/colorSAD/NoOcclusionHandling/invDepthCol.png", minZ, maxZ);
-            dM.saveAsDataFile("pinholeTestResults/colorSAD/NoOcclusionHandling/invDepthCol_data.bin");
+            makeOutputFolder(output_folder + "/colorSAD/NoOcclusionHandling/");
+            dM.saveInvDepthAsColorImage(output_folder + "/colorSAD/NoOcclusionHandling/depth_" + ref + ".png", minZ, maxZ);
+            dM.saveAsDataFile(output_folder + "/colorSAD/NoOcclusionHandling/depth_" + ref + ".bin");
         }
 
         {
@@ -297,12 +305,10 @@ int main(int argc, char* argv[])
             cPS.process(refid);
             PSL::DepthMap<float, double> dM;
             dM = cPS.getBestDepth();
-            cv::Mat refImage = cPS.downloadImage(refid);
 
-            makeOutputFolder("pinholeTestResults/colorSAD/RefSplit/");
-            cv::imwrite("pinholeTestResults/colorSAD/RefSplit/refImg.png",refImage);
-            dM.saveInvDepthAsColorImage("pinholeTestResults/colorSAD/RefSplit/invDepthCol.png", minZ, maxZ);
-            dM.saveAsDataFile("pinholeTestResults/colorSAD/RefSplit/invDepthCol_data.bin");
+            makeOutputFolder(output_folder + "/colorSAD/RefSplit");
+            dM.saveInvDepthAsColorImage(output_folder + "/colorSAD/RefSplit/depth_" + ref + ".png", minZ, maxZ);
+            dM.saveAsDataFile(output_folder + "/colorSAD/RefSplit/depth_" + ref + ".bin");
         }
 
 
@@ -346,14 +352,14 @@ int main(int argc, char* argv[])
 
     // First tests compute a depth map for the middle image of the first row
     {
-        makeOutputFolder("pinholeTestResults/grayscaleSAD");
-        makeOutputFolder("pinholeTestResults/grayscaleZNCC");
+        makeOutputFolder(output_folder + "/grayscaleSAD");
+        makeOutputFolder(output_folder + "/grayscaleZNCC");
 
         PSL::CudaPlaneSweep cPS;
-        cPS.setScale(0.75); // Scale the images down to 0.25 times the original side length
+        cPS.setScale(1.0); // Scale the images down to 0.25 times the original side length
         cPS.setZRange(minZ, maxZ);
         cPS.setMatchWindowSize(27,27);
-        cPS.setNumPlanes(256);
+        cPS.setNumPlanes(depth_planes);
         cPS.setOcclusionMode(PSL::PLANE_SWEEP_OCCLUSION_NONE);
         cPS.setPlaneGenerationMode(PSL::PLANE_SWEEP_PLANEMODE_UNIFORM_DISPARITY);
         cPS.setSubPixelInterpolationMode(PSL::PLANE_SWEEP_SUB_PIXEL_INTERP_INVERSE);
@@ -403,12 +409,10 @@ int main(int argc, char* argv[])
             cPS.process(refid);
             PSL::DepthMap<float, double> dM;
             dM = cPS.getBestDepth();
-            cv::Mat refImage = cPS.downloadImage(refid);
 
-            makeOutputFolder("pinholeTestResults/grayscaleSAD/NoOcclusionHandling/");
-            cv::imwrite("pinholeTestResults/grayscaleSAD/NoOcclusionHandling/refImg.png",refImage);
-            dM.saveInvDepthAsColorImage("pinholeTestResults/grayscaleSAD/NoOcclusionHandling/invDepthCol.png", minZ, maxZ);
-            dM.saveAsDataFile("pinholeTestResults/grayscaleSAD/NoOcclusionHandling/invDepthCol_data.bin");
+            makeOutputFolder(output_folder + "/grayscaleSAD/NoOcclusionHandling");
+            dM.saveInvDepthAsColorImage(output_folder + "/grayscaleSAD/NoOcclusionHandling/depth_" + ref + ".png", minZ, maxZ);
+            dM.saveAsDataFile(output_folder + "/grayscaleSAD/NoOcclusionHandling/depth_" + ref + ".bin");
         }
 
         {
@@ -416,12 +420,10 @@ int main(int argc, char* argv[])
             cPS.process(refid);
             PSL::DepthMap<float, double> dM;
             dM = cPS.getBestDepth();
-            cv::Mat refImage = cPS.downloadImage(refid);
 
-            makeOutputFolder("pinholeTestResults/grayscaleZNCC/NoOcclusionHandling/");
-            cv::imwrite("pinholeTestResults/grayscaleZNCC/NoOcclusionHandling/refImg.png",refImage);
-            dM.saveInvDepthAsColorImage("pinholeTestResults/grayscaleZNCC/NoOcclusionHandling/invDepthCol.png", minZ, maxZ);
-            dM.saveAsDataFile("pinholeTestResults/grayscaleZNCC/NoOcclusionHandling/invDepthCol_data.bin");
+            makeOutputFolder(output_folder + "/grayscaleZNCC/NoOcclusionHandling");
+            dM.saveInvDepthAsColorImage(output_folder + "/grayscaleZNCC/NoOcclusionHandling/depth_" + ref + ".png", minZ, maxZ);
+            dM.saveAsDataFile(output_folder + "/grayscaleZNCC/NoOcclusionHandling/depth_" + ref + ".bin");
         }
 
         cPS.setOcclusionMode(PSL::PLANE_SWEEP_OCCLUSION_REF_SPLIT);
@@ -431,12 +433,10 @@ int main(int argc, char* argv[])
             cPS.process(refid);
             PSL::DepthMap<float, double> dM;
             dM = cPS.getBestDepth();
-            cv::Mat refImage = cPS.downloadImage(refid);
 
-            makeOutputFolder("pinholeTestResults/grayscaleSAD/RefSplit/");
-            cv::imwrite("pinholeTestResults/grayscaleSAD/RefSplit/refImg.png",refImage);
-            dM.saveInvDepthAsColorImage("pinholeTestResults/grayscaleSAD/RefSplit/invDepthCol.png", minZ, maxZ);
-            dM.saveAsDataFile("pinholeTestResults/grayscaleSAD/RefSplit/invDepthCol_data.bin");
+            makeOutputFolder(output_folder + "/grayscaleSAD/RefSplit");
+            dM.saveInvDepthAsColorImage(output_folder + "/grayscaleSAD/RefSplit/depth_" + ref + ".png", minZ, maxZ);
+            dM.saveAsDataFile(output_folder + "/grayscaleSAD/RefSplit/depth_" + ref + ".bin");
         }
 
         {
@@ -444,12 +444,10 @@ int main(int argc, char* argv[])
             cPS.process(refid);
             PSL::DepthMap<float, double> dM;
             dM = cPS.getBestDepth();
-            cv::Mat refImage = cPS.downloadImage(refid);
 
-            makeOutputFolder("pinholeTestResults/grayscaleZNCC/RefSplit/");
-            cv::imwrite("pinholeTestResults/grayscaleZNCC/RefSplit/refImg.png",refImage);
-            dM.saveInvDepthAsColorImage("pinholeTestResults/grayscaleZNCC/RefSplit/invDepthCol.png", minZ, maxZ);
-            dM.saveAsDataFile("pinholeTestResults/grayscaleZNCC/RefSplit/invDepthCol_data.bin");
+            makeOutputFolder(output_folder + "/grayscaleZNCC/RefSplit");
+            dM.saveInvDepthAsColorImage(output_folder + "/grayscaleZNCC/RefSplit/depth_" + ref + ".png", minZ, maxZ);
+            dM.saveAsDataFile(output_folder + "/grayscaleZNCC/RefSplit/depth_" + ref + ".bin");
         }
 
 
