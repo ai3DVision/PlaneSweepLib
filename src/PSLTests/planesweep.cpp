@@ -149,7 +149,7 @@ void read_camera_parameters(std::string camera_parameter_file, Eigen::Matrix3d &
 
 int main(int argc, char* argv[])
 {
-    std::string dataFolder;
+    std::string data_folder;
     std::string output_folder;
     int reference_idx;
     int n_views;
@@ -158,7 +158,7 @@ int main(int argc, char* argv[])
     boost::program_options::options_description desc("Allowed options");
     desc.add_options()
             ("help", "Produce help message")
-            ("dataFolder", boost::program_options::value<std::string>(&dataFolder), "Path to the data")
+            ("data_folder", boost::program_options::value<std::string>(&data_folder), "Path to the data")
             ("output_folder", boost::program_options::value<std::string>(&output_folder), "Path to the save tha output data")
             ("reference_idx", boost::program_options::value<int>(&reference_idx), "Reference frame to be used")
             ("n_views", boost::program_options::value<int>(&n_views), "Number of views to be used")
@@ -175,7 +175,8 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    std::string camera_parameters_folder = dataFolder + "/cams_krt/";
+    std::string camera_parameters_folder = data_folder + "/cams_krt/";
+    std::cout << camera_parameters_folder << std::endl;
 
     std::vector<std::string> camera_files;
     get_files_in_folder(camera_parameters_folder, camera_files, ".txt");
@@ -198,7 +199,7 @@ int main(int argc, char* argv[])
         cameras[c].setKRT(K, R, T);
     }
 
-    std::string images_folder = dataFolder + "/imgs/";
+    std::string images_folder = data_folder + "/imgs/";
 
     std::vector<std::string> image_files;
     get_files_in_folder(images_folder, image_files, ".png");
@@ -228,7 +229,7 @@ int main(int argc, char* argv[])
     avgDistance /= numDistances;
     std::cout << "Cameras have an average distance of " << avgDistance << "." << std::endl;
 
-    float minZ = (float) (0.55f*avgDistance);
+    float minZ = (float) (0.75f*avgDistance);
     float maxZ = (float) (1.5f*avgDistance);
     std::cout << "  Z range :  " << minZ << "  - " << maxZ <<  std::endl;
     makeOutputFolder(output_folder);

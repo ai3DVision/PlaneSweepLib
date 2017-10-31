@@ -28,8 +28,8 @@ def main(argv):
         description=("Transform binary depth data to numpy data")
     )
     parser.add_argument(
-        "input_file",
-        help="Path to the file to be transformed"
+        "input_directory",
+        help="Path to the directory containing the file to be transformed"
     )
     parser.add_argument(
         "output_directory",
@@ -43,7 +43,7 @@ def main(argv):
 
     args = parser.parse_args(argv)
 
-    f = open(args.input_file, "rb")
+    f = open(os.path.join(args.input_directory, "depth_%d.bin" % (args.ref_idx,)), "rb")
     D, height, width = read_data(f)
 
     f.close()
